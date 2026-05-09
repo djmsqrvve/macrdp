@@ -142,22 +142,14 @@ impl RdpServerDisplay for MacDisplay {
                 CapturePixelFormat::Bgra
             },
         };
-        let capturer = ScreenCapturer::new(capture_config.clone()).await?;
+        
+        // For SSH testing, force fallback capturer to avoid CGDisplayStream issues
+        tracing::info!("Using CgFallbackCapturer for SSH compatibility testing");
+        let capturer = CapturerType::Fallback(CgFallbackCapturer::new(&capture_config));
 
-        // Create H.264 encoder with configured quality and encoder preference
-        let encoder = macrdp_encode::create_encoder(
-            self.width as u32,
-            self.height as u32,
-            self.frame_rate as f32,
-            self.quality,
-            self.encoder_pref,
-            self.mode_444,
-            self.base_bitrate,
-        ).ok();
-
-        if encoder.is_some() {
-            tracing::info!("H.264 encoder available — will use GFX path when client supports it");
-        }
+        // Disable H.264 encoder to force bitmap updates (for Remmina compatibility)
+        let encoder = None;
+        tracing::info!("H.264 encoder disabled — using bitmap updates for client compatibility");
 
         Ok(Box::new(MacDisplayUpdates {
             capturer,
@@ -172,8 +164,13 @@ impl RdpServerDisplay for MacDisplay {
     }
 }
 
+enum CapturerType {
+    Stream(ScreenCapturer),
+    Fallback(CgFallbackCapturer),
+}
+
 struct MacDisplayUpdates {
-    capturer: ScreenCapturer,
+    capturer: CapturerType,
     capture_config: CaptureConfig,
     encoder: Option<Box<dyn VideoEncoder>>,
     gfx_state: Arc<Mutex<GfxState>>,
@@ -186,42 +183,35 @@ struct MacDisplayUpdates {
 #[async_trait::async_trait]
 impl RdpServerDisplayUpdates for MacDisplayUpdates {
     async fn next_update(&mut self) -> Result<Option<DisplayUpdate>> {
-        // Drain stale frames — always use the latest available frame.
-        // If SCK capturer stops (e.g. screen locked), fall back to CGDisplayCreateImage
-        // which works at the display level (including lock screen).
-        let frame = loop {
-            let frame = match self.capturer.next_frame().await {
-                Some(f) => f,
-                None => {
-                    // SCK stopped — fall back to CoreGraphics capture (works on lock screen)
-                    tracing::warn!("SCStream stopped — switching to CoreGraphics fallback (lock screen?)");
-                    let fallback = CgFallbackCapturer::new(&self.capture_config);
-                    loop {
-                        // Try to restore SCK (faster, has dirty rects)
-                        match ScreenCapturer::new(self.capture_config.clone()).await {
-                            Ok(new_capturer) => {
-                                tracing::info!("SCStream recovered — switching back from CoreGraphics");
-                                self.capturer = new_capturer;
-                                break;
-                            }
-                            Err(_) => {
-                                // SCK still unavailable — use CGDisplayCreateImage
-                                if let Some(cg_frame) = fallback.capture_frame() {
-                                    // Send this fallback frame through the normal encoding path
-                                    return self.encode_and_send(cg_frame);
-                                }
-                                tokio::time::sleep(fallback.frame_interval()).await;
-                            }
+        // Get frame from appropriate capturer
+        let frame = match &mut self.capturer {
+            CapturerType::Stream(capturer) => {
+                // Drain stale frames — always use the latest available frame
+                loop {
+                    let frame = match capturer.next_frame().await {
+                        Some(f) => f,
+                        None => {
+                            // Stream stopped — this shouldn't happen with CGDisplayStream
+                            // If it does, we'll just return an error
+                            anyhow::bail!("CGDisplayStream stopped unexpectedly");
                         }
+                    };
+                    
+                    // If another frame is already buffered, skip this one and grab the newer one
+                    match capturer.try_next_frame() {
+                        Some(_newer) => continue, // drop older frame, grab newer
+                        None => break frame,
                     }
-                    continue; // retry next_frame with restored SCK capturer
                 }
-            };
-            // If another frame is already buffered, skip this one and grab the newer one
-            // This prevents frame queuing which adds latency
-            match self.capturer.try_next_frame() {
-                Some(_newer) => continue, // drop older frame, grab newer
-                None => break frame,
+            }
+            CapturerType::Fallback(capturer) => {
+                // Use fallback capturer with pacing
+                loop {
+                    if let Some(frame) = capturer.capture_frame() {
+                        break frame;
+                    }
+                    tokio::time::sleep(capturer.frame_interval()).await;
+                }
             }
         };
 

@@ -526,6 +526,8 @@ impl VtEncoder {
             VTSessionSetProperty(session, kVTCompressionPropertyKey_MaxKeyFrameInterval, cf_i32(fps as i32 * 5));
 
             // PrioritizeEncodingSpeedOverQuality (macOS 14+) — reduce encode latency
+            // Note: This property is ignored on macOS < 14.0 (VTSessionSetProperty ignores unknown keys)
+            // Safe to set on all versions; optimization only applies on macOS 14+
             {
                 let key_bytes = b"PrioritizeEncodingSpeedOverQuality\0";
                 let key = CFStringCreateWithCString(

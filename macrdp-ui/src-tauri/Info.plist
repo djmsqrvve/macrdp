@@ -4,5 +4,7 @@
 <dict>
     <key>LSUIElement</key>
     <true/>
+    <key>LSMinimumSystemVersion</key>
+    <string>12.3</string>
 </dict>
 </plist>

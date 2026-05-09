@@ -2,7 +2,7 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Rust](https://img.shields.io/badge/Rust-1.75%2B-orange.svg)](https://www.rust-lang.org/)
-[![macOS](https://img.shields.io/badge/macOS-14%2B-black.svg)](https://www.apple.com/macos/)
+[![macOS](https://img.shields.io/badge/macOS-12.3%2B-black.svg)](https://www.apple.com/macos/)
 [![Apple Silicon](https://img.shields.io/badge/Apple%20Silicon-Supported-green.svg)](#)
 
 **[English](../../README_EN.md)** | 中文
@@ -30,7 +30,7 @@
 
 ## 环境要求
 
-- **macOS 14+**（Sonoma 或更高版本）
+- **macOS 12.3+**（Monterey 或更高版本）
 - **Rust 1.75+**
 - 屏幕录制权限（系统设置 > 隐私与安全性）
 - 辅助功能权限（用于键盘鼠标注入）

@@ -2,7 +2,7 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Rust](https://img.shields.io/badge/Rust-1.75%2B-orange.svg)](https://www.rust-lang.org/)
-[![macOS](https://img.shields.io/badge/macOS-14%2B-black.svg)](https://www.apple.com/macos/)
+[![macOS](https://img.shields.io/badge/macOS-12.3%2B-black.svg)](https://www.apple.com/macos/)
 [![Apple Silicon](https://img.shields.io/badge/Apple%20Silicon-Supported-green.svg)](#)
 
 **Fork of [x6nux/macrdp](https://github.com/x6nux/macrdp) by [djmsqrvve](https://github.com/djmsqrvve)**
@@ -40,7 +40,7 @@ This is DJ's personal fork with enhancements:
 
 ## Requirements
 
-- **macOS 14+** (Sonoma or later)
+- **macOS 12.3+** (Monterey or later)
 - **Rust 1.75+**
 - Screen Recording permission (System Settings > Privacy & Security)
 - Accessibility permission (for keyboard/mouse injection)

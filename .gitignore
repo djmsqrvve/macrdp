@@ -1,5 +1,6 @@
 
 .claude/
+.devin/
 .DS_Store
 .env
 .env.local

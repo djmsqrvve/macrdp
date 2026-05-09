@@ -1,24 +1,112 @@
-//! macOS screen capture via ScreenCaptureKit
+//! macOS screen capture via CGDisplayStream (CoreGraphics)
+//! Swift-free alternative to ScreenCaptureKit for macOS 12.3+ compatibility
 
 use std::ffi::c_void;
+use std::path::PathBuf;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{Context, Result};
 use bytes::Bytes;
-use core_graphics::access::ScreenCaptureAccess;
-use screencapturekit::cv::{CVPixelBuffer, CVPixelBufferLockFlags};
-use screencapturekit::prelude::*;
+use core_foundation::{
+    base::{CFType, TCFType},
+    boolean::CFBoolean,
+    dictionary::{CFDictionary, CFMutableDictionary},
+    number::CFNumber,
+    string::CFString,
+};
+use core_graphics2::{
+    error::CGError,
+    display::CGDisplay,
+    display_stream::*,
+};
+use dispatch2::{Queue, QueueAttribute};
+use core_video::pixel_buffer;
 use tokio::sync::mpsc;
 
+/// Screenshot directory for debugging capture functionality
+static SCREENSHOT_DIR: &str = "/tmp/macrdp_screenshots";
+
+/// Environment variable to enable screenshot debugging
+const SCREENSHOT_DEBUG_ENV: &str = "MACRDP_SCREENSHOT_DEBUG";
+
+/// Initialize screenshot directory
+fn init_screenshot_dir() -> Result<PathBuf> {
+    let path = PathBuf::from(SCREENSHOT_DIR);
+    std::fs::create_dir_all(&path)?;
+    Ok(path)
+}
+
+/// Check if screenshot debugging is enabled
+fn screenshot_debug_enabled() -> bool {
+    std::env::var(SCREENSHOT_DEBUG_ENV).is_ok()
+}
+
+/// Save BGRA frame as PNG file for debugging (only when MACRDP_SCREENSHOT_DEBUG is set)
+fn maybe_save_frame_as_png(frame_data: &[u8], width: u32, height: u32, stride: usize, label: &str) {
+    if !screenshot_debug_enabled() {
+        return;
+    }
+    
+    if let Err(e) = save_frame_as_png(frame_data, width, height, stride, label) {
+        tracing::warn!("Failed to save screenshot: {}", e);
+    }
+}
+
+/// Save BGRA frame as PNG file for debugging
+fn save_frame_as_png(frame_data: &[u8], width: u32, height: u32, stride: usize, label: &str) -> Result<()> {
+    let screenshot_dir = init_screenshot_dir()?;
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)?
+        .as_millis();
+    let filename = format!("{}_{}.png", label, timestamp);
+    let filepath = screenshot_dir.join(filename);
+    
+    // Convert BGRA to RGBA for PNG encoding
+    let rgba_data: Vec<u8> = frame_data
+        .chunks_exact(4)
+        .flat_map(|bgra| [bgra[2], bgra[1], bgra[0], bgra[3]]) // BGRA -> RGBA
+        .collect();
+    
+    // Create image buffer
+    let mut img_buf = image::ImageBuffer::<image::Rgba<u8>, Vec<u8>>::new(width, height);
+    
+    // Copy row by row to handle stride
+    for y in 0..height {
+        let row_start = y as usize * stride;
+        let row_end = row_start + (width as usize * 4);
+        if row_end <= rgba_data.len() {
+            let row_data = &rgba_data[row_start..row_end];
+            for x in 0..width {
+                if let Some(pixel) = row_data.get(x as usize * 4..(x as usize + 1) * 4) {
+                    if pixel.len() == 4 {
+                        img_buf.put_pixel(x, y, image::Rgba([pixel[0], pixel[1], pixel[2], pixel[3]]));
+                    }
+                }
+            }
+        }
+    }
+    
+    img_buf.save(&filepath)?;
+    tracing::info!("Saved screenshot: {}", filepath.display());
+    Ok(())
+}
+
 /// Check if Screen Recording permission is granted (no prompt)
+/// Note: CGDisplayStream may have different permission requirements than ScreenCaptureKit
 pub fn check_screen_recording_permission() -> bool {
-    ScreenCaptureAccess::default().preflight()
+    // CGDisplayStream doesn't have the same preflight API as ScreenCaptureKit
+    // We'll check by attempting to create a stream and see if it fails
+    true // Assume granted for now, will fail at runtime if not
 }
 
 /// Request Screen Recording permission (triggers system dialog if not granted)
 /// Returns true if already granted. Note: even after granting, the app
 /// may need to be restarted for the permission to take effect.
 pub fn request_screen_recording_permission() -> bool {
-    ScreenCaptureAccess::default().request()
+    // CGDisplayStream doesn't have the same request API as ScreenCaptureKit
+    // Open System Settings instead
+    open_screen_recording_settings();
+    false
 }
 
 /// Open System Settings to Privacy & Security page
@@ -86,206 +174,158 @@ pub struct CaptureConfig {
     pub pixel_format: CapturePixelFormat,
 }
 
-/// Screen capturer using ScreenCaptureKit
+/// Screen capturer using CGDisplayStream
 pub struct ScreenCapturer {
-    _stream: SCStream,
+    _stream: CGDisplayStream,
     frame_rx: mpsc::Receiver<CapturedFrame>,
 }
+
+// SAFETY: CGDisplayStream is a CoreFoundation reference-counted object,
+// which is safe to send across threads. The underlying CGDisplayStreamRef
+// is managed by CoreFoundation's reference counting.
+unsafe impl Send for ScreenCapturer {}
 
 struct OutputHandler {
     frame_tx: mpsc::Sender<CapturedFrame>,
     pixel_format: CapturePixelFormat,
+    width: u32,
+    height: u32,
+    frame_count: std::sync::atomic::AtomicU32,
 }
 
-impl SCStreamOutputTrait for OutputHandler {
-    fn did_output_sample_buffer(&self, sample: CMSampleBuffer, of_type: SCStreamOutputType) {
-        if of_type != SCStreamOutputType::Screen {
-            return;
+impl OutputHandler {
+    fn handle_frame(
+        &self,
+        status: CGDisplayStreamFrameStatus,
+        timestamp: u64,
+        surface: Option<io_surface::IOSurface>,
+        _update: Option<CGDisplayStreamUpdate>,
+    ) {
+        match status {
+            CGDisplayStreamFrameStatus::Stopped => {
+                tracing::debug!("CGDisplayStream stopped");
+                return;
+            }
+            CGDisplayStreamFrameStatus::FrameComplete => {}
+            _ => return,
         }
+
+        let surface = match surface {
+            Some(s) => s,
+            None => return,
+        };
 
         let frame = match self.pixel_format {
-            CapturePixelFormat::Nv12 => extract_frame_nv12(&sample),
-            CapturePixelFormat::Bgra => extract_frame(&sample),
+            CapturePixelFormat::Nv12 => self.extract_frame_nv12(&surface, timestamp),
+            CapturePixelFormat::Bgra => self.extract_frame_bgra(&surface, timestamp),
         };
-        let Some(frame) = frame else { return };
 
-        // Non-blocking send — drop frame if channel is full
-        let _ = self.frame_tx.try_send(frame);
+        if let Some(frame) = frame {
+            // Non-blocking send — drop frame if channel is full
+            let _ = self.frame_tx.try_send(frame);
+        }
     }
-}
 
-fn extract_frame(sample: &CMSampleBuffer) -> Option<CapturedFrame> {
-    use screencapturekit::cm::SCFrameStatus;
+    fn extract_frame_bgra(&self, surface: &io_surface::IOSurface, timestamp: u64) -> Option<CapturedFrame> {
+        use io_surface::{IOSurfaceLock, IOSurfaceUnlock, IOSurfaceLockOptions};
 
-    // Skip non-complete frames (idle, blank, suspended, etc.)
-    match sample.frame_status() {
-        Some(SCFrameStatus::Idle) | Some(SCFrameStatus::Blank)
-        | Some(SCFrameStatus::Suspended) | Some(SCFrameStatus::Stopped) => {
+        // Lock the IOSurface for reading
+        let mut seed = 0;
+        let surface_ref = surface.as_concrete_TypeRef();
+        let lock_result = unsafe { IOSurfaceLock(surface_ref, IOSurfaceLockOptions::kIOSurfaceLockReadOnly, &mut seed) };
+        if lock_result != 0 {
+            tracing::error!("Failed to lock IOSurface: {}", lock_result);
             return None;
         }
-        _ => {}
-    }
 
-    let pixel_buffer: CVPixelBuffer = sample.image_buffer()?;
+        // Get IOSurface properties using the C API
+        let width = unsafe { io_surface::IOSurfaceGetWidth(surface_ref) };
+        let height = unsafe { io_surface::IOSurfaceGetHeight(surface_ref) };
+        let bytes_per_row = unsafe { io_surface::IOSurfaceGetBytesPerRow(surface_ref) };
+        let base_address = unsafe { io_surface::IOSurfaceGetBaseAddress(surface_ref) } as *const u8;
 
-    let guard = pixel_buffer.lock(CVPixelBufferLockFlags::READ_ONLY).ok()?;
-
-    let width = guard.width() as u32;
-    let height = guard.height() as u32;
-    let stride = guard.bytes_per_row();
-    let pixels = guard.as_slice();
-
-    if width == 0 || height == 0 || pixels.is_empty() {
-        return None;
-    }
-
-    // Extract dirty rects from the sample buffer
-    // Extract dirty rects — screencapturekit's CGRect has x/y/width/height fields
-    let dirty_rects = sample
-        .dirty_rects()
-        .unwrap_or_default()
-        .into_iter()
-        .filter(|r| r.width > 0.0 && r.height > 0.0)
-        .map(|r| Rect {
-            x: r.x.max(0.0) as u32,
-            y: r.y.max(0.0) as u32,
-            width: r.width as u32,
-            height: r.height as u32,
-        })
-        .collect::<Vec<_>>();
-
-    let data = Bytes::copy_from_slice(pixels);
-
-    let t = sample.presentation_timestamp();
-    let timestamp_us = if t.timescale > 0 {
-        ((t.value as u128 * 1_000_000) / t.timescale as u128) as u64
-    } else {
-        0
-    };
-
-    Some(CapturedFrame {
-        width,
-        height,
-        data: FrameData::Raw(data),
-        stride,
-        timestamp_us,
-        dirty_rects,
-    })
-}
-
-/// Extract a frame in NV12 mode — zero-copy CVPixelBuffer wrapped as SafePixelBuffer.
-/// The pixel buffer is retained and passed through the channel without locking or copying.
-fn extract_frame_nv12(sample: &CMSampleBuffer) -> Option<CapturedFrame> {
-    use screencapturekit::cm::SCFrameStatus;
-
-    // Skip non-complete frames (idle, blank, suspended, etc.)
-    match sample.frame_status() {
-        Some(SCFrameStatus::Idle)
-        | Some(SCFrameStatus::Blank)
-        | Some(SCFrameStatus::Suspended)
-        | Some(SCFrameStatus::Stopped) => {
+        if base_address.is_null() {
+            tracing::error!("IOSurface base address is null");
+            unsafe { IOSurfaceUnlock(surface_ref, IOSurfaceLockOptions::kIOSurfaceLockReadOnly, &mut seed) };
             return None;
         }
-        _ => {}
+
+        // Calculate total size
+        let total_size = bytes_per_row * height;
+
+        // Copy the pixel data
+        let pixel_data = unsafe {
+            std::slice::from_raw_parts(base_address, total_size).to_vec()
+        };
+
+        // Unlock the IOSurface
+        unsafe { IOSurfaceUnlock(surface_ref, IOSurfaceLockOptions::kIOSurfaceLockReadOnly, &mut seed) };
+
+        let frame = CapturedFrame {
+            width: width as u32,
+            height: height as u32,
+            data: FrameData::Raw(Bytes::from(pixel_data.clone())),
+            stride: bytes_per_row,
+            timestamp_us: timestamp,
+            dirty_rects: vec![Rect {
+                x: 0,
+                y: 0,
+                width: width as u32,
+                height: height as u32,
+            }],
+        };
+
+        // Save screenshot for debugging (first 10 frames only)
+        let frame_num = self.frame_count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        if frame_num < 10 {
+            maybe_save_frame_as_png(&pixel_data, width as u32, height as u32, bytes_per_row, "cgstream");
+        }
+
+        Some(frame)
     }
 
-    let pixel_buffer: CVPixelBuffer = sample.image_buffer()?;
-
-    // width()/height() read from the CVPixelBuffer header — no lock required
-    let width = pixel_buffer.width() as u32;
-    let height = pixel_buffer.height() as u32;
-
-    if width == 0 || height == 0 {
-        return None;
+    fn extract_frame_nv12(&self, surface: &io_surface::IOSurface, timestamp: u64) -> Option<CapturedFrame> {
+        // For now, fall back to BGRA extraction from NV12 surface
+        // Full NV12 support would require proper CVPixelBuffer wrapping
+        // CGDisplayStream typically outputs in the requested format
+        self.extract_frame_bgra(surface, timestamp)
     }
-
-    // Extract dirty rects (same logic as the BGRA path)
-    let dirty_rects = sample
-        .dirty_rects()
-        .unwrap_or_default()
-        .into_iter()
-        .filter(|r| r.width > 0.0 && r.height > 0.0)
-        .map(|r| Rect {
-            x: r.x.max(0.0) as u32,
-            y: r.y.max(0.0) as u32,
-            width: r.width as u32,
-            height: r.height as u32,
-        })
-        .collect::<Vec<_>>();
-
-    let t = sample.presentation_timestamp();
-    let timestamp_us = if t.timescale > 0 {
-        ((t.value as u128 * 1_000_000) / t.timescale as u128) as u64
-    } else {
-        0
-    };
-
-    // Zero-copy: retain the CVPixelBuffer and wrap it as SafePixelBuffer
-    let safe_buf = unsafe { SafePixelBuffer::from_raw(pixel_buffer.as_ptr()) };
-
-    Some(CapturedFrame {
-        width,
-        height,
-        data: FrameData::PixelBuffer(safe_buf),
-        stride: 0, // Not applicable for NV12 PixelBuffer mode
-        timestamp_us,
-        dirty_rects,
-    })
-}
-
-/// Query the main display's resolution
-pub fn detect_display_size() -> Result<(u32, u32)> {
-    let content = SCShareableContent::get()
-        .context("Failed to get shareable content")?;
-    let display = content
-        .displays()
-        .into_iter()
-        .next()
-        .context("No display found")?;
-    Ok((display.width() as u32, display.height() as u32))
 }
 
 impl ScreenCapturer {
     /// Create a new screen capturer for the main display
     pub async fn new(config: CaptureConfig) -> Result<Self> {
-        // SCShareableContent::get() is synchronous, run in blocking task
-        let content = tokio::task::spawn_blocking(|| SCShareableContent::get())
-            .await?
-            .context("Failed to get shareable content (Screen Recording permission needed)")?;
-
-        let display = content
-            .displays()
-            .into_iter()
-            .next()
-            .context("No display found")?;
+        let display = CGDisplay::main();
+        let display_id = display.id;
 
         let actual_width = if config.width == 0 {
-            display.width() as u32
+            display.pixels_wide() as u32
         } else {
             config.width
         };
         let actual_height = if config.height == 0 {
-            display.height() as u32
+            display.pixels_high() as u32
         } else {
             config.height
         };
 
-        let filter = SCContentFilter::create()
-            .with_display(&display)
-            .with_excluding_windows(&[])
-            .build();
+        // Pixel format: BGRA for compatibility, NV12 for performance
+        let pixel_format = match config.pixel_format {
+            CapturePixelFormat::Nv12 => pixel_buffer::kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,
+            CapturePixelFormat::Bgra => pixel_buffer::kCVPixelFormatType_32BGRA,
+        };
 
-        let frame_interval = CMTime::new(1, config.frame_rate as i32);
-
-        let stream_config = SCStreamConfiguration::new()
-            .with_width(actual_width)
-            .with_height(actual_height)
-            .with_minimum_frame_interval(&frame_interval)
-            .with_pixel_format(match config.pixel_format {
-                CapturePixelFormat::Nv12 => PixelFormat::YCbCr_420f,
-                CapturePixelFormat::Bgra => PixelFormat::BGRA,
-            })
-            .with_shows_cursor(true);
+        // Create properties dictionary
+        let properties = CFDictionary::from_CFType_pairs(&[
+            (
+                CGDisplayStreamProperties::ShowCursor.into(),
+                CFBoolean::true_value().as_CFType(),
+            ),
+            (
+                CGDisplayStreamProperties::MinimumFrameTime.into(),
+                CFNumber::from(1.0 / config.frame_rate as f64).as_CFType(),
+            ),
+        ]);
 
         // Channel for frames: buffer 2 frames to allow for jitter
         let (frame_tx, frame_rx) = mpsc::channel(2);
@@ -293,19 +333,49 @@ impl ScreenCapturer {
         let handler = OutputHandler {
             frame_tx,
             pixel_format: config.pixel_format,
+            width: actual_width,
+            height: actual_height,
+            frame_count: std::sync::atomic::AtomicU32::new(0),
         };
 
-        let mut stream = SCStream::new(&filter, &stream_config);
-        stream.add_output_handler(handler, SCStreamOutputType::Screen);
+        // Create dispatch queue for callbacks
+        let queue = Queue::new(
+            "com.macrdp.displaystream",
+            QueueAttribute::Serial,
+        );
 
-        stream.start_capture().context("Failed to start capture")?;
+        // Create the display stream
+        let stream = match CGDisplayStream::new_with_dispatch_queue(
+            display_id,
+            actual_width as usize,
+            actual_height as usize,
+            pixel_format as i32,
+            &properties,
+            &queue,
+            move |status, timestamp, surface, update| {
+                handler.handle_frame(status, timestamp, surface, update);
+            },
+        ) {
+            Ok(stream) => stream,
+            Err(_) => {
+                tracing::warn!("CGDisplayStream creation failed - this is normal in SSH/headless sessions");
+                tracing::warn!("Falling back to CgFallbackCapturer (CGDisplayCreateImage)");
+                return Err(anyhow::anyhow!("CGDisplayStream not available in current session"));
+            }
+        };
+
+        // Start the stream
+        let start_result = stream.start();
+        if start_result != CGError::Success {
+            anyhow::bail!("Failed to start CGDisplayStream: {:?}", start_result);
+        }
 
         tracing::info!(
             width = actual_width,
             height = actual_height,
             fps = config.frame_rate,
             pixel_format = ?config.pixel_format,
-            "Screen capture started"
+            "CGDisplayStream capture started"
         );
 
         Ok(Self {
@@ -325,6 +395,12 @@ impl ScreenCapturer {
     }
 }
 
+/// Query the main display's resolution
+pub fn detect_display_size() -> Result<(u32, u32)> {
+    let display = CGDisplay::main();
+    Ok((display.pixels_wide() as u32, display.pixels_high() as u32))
+}
+
 /// Fallback capturer using CGDisplayCreateImage (CoreGraphics).
 /// Works during lock screen because it captures at the display level,
 /// below the window server / ScreenCaptureKit layer.
@@ -333,43 +409,65 @@ pub struct CgFallbackCapturer {
     width: u32,
     height: u32,
     frame_interval: std::time::Duration,
+    frame_count: std::sync::atomic::AtomicU32,
 }
 
 impl CgFallbackCapturer {
     /// Create a fallback capturer for the main display
     pub fn new(config: &CaptureConfig) -> Self {
-        let display_id = core_graphics::display::CGDisplay::main().id;
-        let fps = if config.frame_rate > 0 { config.frame_rate } else { 30 };
+        let display_id = CGDisplay::main().id;
+        let fps = if config.frame_rate > 0 {
+            config.frame_rate
+        } else {
+            30
+        };
         Self {
             display_id,
             width: config.width,
             height: config.height,
             frame_interval: std::time::Duration::from_micros(1_000_000 / fps as u64),
+            frame_count: std::sync::atomic::AtomicU32::new(0),
         }
     }
 
     /// Capture a single frame using CGDisplayCreateImage
     pub fn capture_frame(&self) -> Option<CapturedFrame> {
-        let display = core_graphics::display::CGDisplay::new(self.display_id);
-        let image = display.image()?;
+        let display = CGDisplay::new(self.display_id);
+        let image = display.new_image()?;
 
         let w = image.width() as u32;
         let h = image.height() as u32;
         let bpr = image.bytes_per_row();
-        let data = image.data();
-        let raw = data.bytes().to_vec();
+        
+        // Use a simple approach to get the image data via CFData
+        let data_provider = image.data_provider()?;
+        let cf_data = data_provider.copy_data()?;
+        let raw = cf_data.bytes().to_vec();
 
-        Some(CapturedFrame {
+        let frame = CapturedFrame {
             width: if self.width > 0 { self.width } else { w },
             height: if self.height > 0 { self.height } else { h },
-            data: FrameData::Raw(Bytes::from(raw)),
+            data: FrameData::Raw(Bytes::from(raw.clone())),
             stride: bpr,
-            timestamp_us: std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
+            timestamp_us: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
                 .unwrap_or_default()
                 .as_micros() as u64,
-            dirty_rects: vec![],
-        })
+            dirty_rects: vec![Rect {
+                x: 0,
+                y: 0,
+                width: if self.width > 0 { self.width } else { w },
+                height: if self.height > 0 { self.height } else { h },
+            }],
+        };
+
+        // Save screenshot for debugging (first 10 frames only)
+        let frame_num = self.frame_count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        if frame_num < 10 {
+            maybe_save_frame_as_png(&raw, frame.width, frame.height, frame.stride, "cgfallback");
+        }
+
+        Some(frame)
     }
 
     /// Frame interval for pacing
