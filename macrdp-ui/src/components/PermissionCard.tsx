@@ -42,7 +42,7 @@ function PermissionCard({
           {granted ? (
             <span className="flex items-center gap-1.5 text-xs font-medium text-macos-green">
               <CheckCircle2 className="h-3.5 w-3.5" />
-              已授权
+              Authorized
             </span>
           ) : (
             <Button
@@ -50,7 +50,7 @@ function PermissionCard({
               onClick={() => api.openSystemPreferences(pane)}
             >
               <AlertCircle className="h-3.5 w-3.5" />
-              去授权
+              Authorize
             </Button>
           )}
         </div>

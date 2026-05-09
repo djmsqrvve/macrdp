@@ -61,7 +61,7 @@ function Dashboard() {
       {/* Top control bar: title, uptime dot, stop/start button */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <h1 className="text-lg font-semibold">仪表盘</h1>
+          <h1 className="text-lg font-semibold">Dashboard</h1>
           <StatusBadge status={status.state} />
           {status.running && status.uptime_secs > 0 && (
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -79,7 +79,7 @@ function Dashboard() {
               onClick={handleStop}
             >
               <Square className="h-3.5 w-3.5" />
-              停止服务
+              Stop Server
             </Button>
           ) : (
             <Button
@@ -88,7 +88,7 @@ function Dashboard() {
               disabled={loading || status.state === "starting"}
               onClick={handleStart}
             >
-              启动服务
+              Start Server
             </Button>
           )}
         </div>
@@ -97,7 +97,7 @@ function Dashboard() {
       {/* Error banner */}
       {error && (
         <div className="rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          <span className="font-medium">操作失败: </span>{error}
+          <span className="font-medium">Operation failed: </span>{error}
         </div>
       )}
 
@@ -113,7 +113,7 @@ function Dashboard() {
         <Card>
           <CardContent>
             <div className="py-6 text-center text-sm text-muted-foreground">
-              {status.running ? "等待指标数据..." : "服务未运行"}
+              {status.running ? "Waiting for metrics data..." : "Service not running"}
             </div>
           </CardContent>
         </Card>
@@ -124,7 +124,7 @@ function Dashboard() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Monitor className="h-4 w-4 text-muted-foreground" />
-            当前连接
+            Active Connections
             <span className="text-sm font-normal text-muted-foreground">
               ({connections.length})
             </span>
@@ -133,7 +133,7 @@ function Dashboard() {
         <CardContent>
           {connections.length === 0 ? (
             <div className="rounded-lg bg-muted/40 py-8 text-center text-sm text-muted-foreground">
-              暂无连接
+              No active connections
             </div>
           ) : (
             <div className="space-y-2">

@@ -54,7 +54,7 @@ function Statistics() {
   const formatDate = (dateStr: string) => {
     try {
       const d = new Date(dateStr);
-      return d.toLocaleDateString("zh-CN", {
+      return d.toLocaleDateString("en-US", {
         month: "2-digit",
         day: "2-digit",
       });
@@ -66,7 +66,7 @@ function Statistics() {
   const formatDateTime = (dateStr: string) => {
     try {
       const d = new Date(dateStr);
-      return d.toLocaleString("zh-CN", {
+      return d.toLocaleString("en-US", {
         month: "2-digit",
         day: "2-digit",
         hour: "2-digit",
@@ -83,7 +83,7 @@ function Statistics() {
       {/* Traffic stats section */}
       <section>
         <h2 className="mb-3 text-base font-medium text-foreground">
-          流量统计
+          Traffic Statistics
         </h2>
 
         {/* Summary */}
@@ -94,7 +94,7 @@ function Statistics() {
                 <BarChart3 className="h-4 w-4 text-muted-foreground" />
               </div>
               <div>
-                <div className="text-xs text-muted-foreground">30 天总流量</div>
+                <div className="text-xs text-muted-foreground">30-day Total Traffic</div>
                 <div className="mt-0.5 text-lg font-semibold text-foreground">
                   {formatBytes(totalTraffic)}
                 </div>
@@ -107,7 +107,7 @@ function Statistics() {
                 <Network className="h-4 w-4 text-muted-foreground" />
               </div>
               <div>
-                <div className="text-xs text-muted-foreground">30 天总连接数</div>
+                <div className="text-xs text-muted-foreground">30-day Total Connections</div>
                 <div className="mt-0.5 text-lg font-semibold text-foreground">
                   {totalConnections}
                 </div>
@@ -120,7 +120,7 @@ function Statistics() {
         {trafficStats.length === 0 ? (
           <Card size="sm">
             <CardContent className="py-8 text-center text-sm text-muted-foreground">
-              暂无流量数据
+              No traffic data available
             </CardContent>
           </Card>
         ) : (
@@ -154,13 +154,13 @@ function Statistics() {
       {/* Connection history table */}
       <section>
         <h2 className="mb-3 text-base font-medium text-foreground">
-          连接历史
+          Connection History
         </h2>
 
         {history.length === 0 && page === 0 ? (
           <Card size="sm">
             <CardContent className="py-8 text-center text-sm text-muted-foreground">
-              暂无连接记录
+              No connection records
             </CardContent>
           </Card>
         ) : (
@@ -170,22 +170,22 @@ function Statistics() {
                 <thead>
                   <tr className="border-b border-border bg-muted/50">
                     <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">
-                      客户端
+                      Client
                     </th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">
                       IP
                     </th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">
-                      连接时间
+                      Connected At
                     </th>
                     <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">
-                      断开时间
+                      Disconnected At
                     </th>
                     <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground">
-                      时长
+                      Duration
                     </th>
                     <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground">
-                      流量
+                      Traffic
                     </th>
                   </tr>
                 </thead>
@@ -222,7 +222,7 @@ function Statistics() {
             {/* Pagination */}
             <div className="mt-3 flex items-center justify-between">
               <span className="text-xs text-muted-foreground">
-                第 {page + 1} 页
+                Page {page + 1}
               </span>
               <div className="flex gap-2">
                 <Button
@@ -232,7 +232,7 @@ function Statistics() {
                   onClick={() => fetchHistory(page - 1)}
                 >
                   <ChevronLeft className="h-3.5 w-3.5" />
-                  上一页
+                  Previous
                 </Button>
                 <Button
                   variant="outline"
@@ -240,7 +240,7 @@ function Statistics() {
                   disabled={!hasMore}
                   onClick={() => fetchHistory(page + 1)}
                 >
-                  下一页
+                  Next
                   <ChevronRight className="h-3.5 w-3.5" />
                 </Button>
               </div>

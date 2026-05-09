@@ -13,19 +13,19 @@ import { useServerStatus } from "../hooks/useServerStatus";
 import type { PermissionStatus } from "../lib/types";
 
 const navItems = [
-  { to: "/", icon: LayoutDashboard, label: "仪表盘" },
-  { to: "/settings", icon: Settings, label: "设置" },
-  { to: "/permissions", icon: Shield, label: "权限" },
-  { to: "/logs", icon: FileText, label: "日志" },
-  { to: "/statistics", icon: Activity, label: "统计" },
-  { to: "/about", icon: Info, label: "关于" },
+  { to: "/", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/settings", icon: Settings, label: "Settings" },
+  { to: "/permissions", icon: Shield, label: "Permissions" },
+  { to: "/logs", icon: FileText, label: "Logs" },
+  { to: "/statistics", icon: Activity, label: "Statistics" },
+  { to: "/about", icon: Info, label: "About" },
 ];
 
 const statusConfig: Record<string, { color: string; label: string }> = {
-  running: { color: "bg-macos-green", label: "运行中" },
-  stopped: { color: "bg-macos-secondary", label: "未运行" },
-  starting: { color: "bg-macos-yellow", label: "启动中" },
-  error: { color: "bg-macos-red", label: "错误" },
+  running: { color: "bg-macos-green", label: "Running" },
+  stopped: { color: "bg-macos-secondary", label: "Stopped" },
+  starting: { color: "bg-macos-yellow", label: "Starting" },
+  error: { color: "bg-macos-red", label: "Error" },
 };
 
 function Sidebar() {

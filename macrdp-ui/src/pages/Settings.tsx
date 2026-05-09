@@ -48,7 +48,7 @@ function Settings() {
   if (!config) {
     return (
       <div className="flex items-center justify-center py-20 text-sm text-muted-foreground">
-        加载配置中...
+        Loading configuration...
       </div>
     );
   }
@@ -57,7 +57,7 @@ function Settings() {
 
   return (
     <div className="space-y-4 p-1">
-      <h1 className="text-2xl font-bold tracking-tight">配置</h1>
+      <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
 
       {/* Restart required banner */}
       {restartRequired && (
@@ -65,7 +65,7 @@ function Settings() {
           <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
           <AlertDescription className="flex items-center justify-between">
             <span className="text-yellow-800 dark:text-yellow-300">
-              部分配置需重启服务后生效
+              Some settings require server restart to take effect
             </span>
             <Button
               variant="ghost"
@@ -81,17 +81,17 @@ function Settings() {
 
       {/* 2-column grid on wider screens */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {/* RDP 服务 */}
+        {/* RDP Service */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">RDP 服务</CardTitle>
+            <CardTitle className="text-sm font-medium">RDP Service</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Port */}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">
-                端口
-                <span className="ml-1 text-xs text-muted-foreground/60">(重启服务生效)</span>
+                Port
+                <span className="ml-1 text-xs text-muted-foreground/60">(restart required)</span>
               </label>
               <Input
                 type="number"
@@ -103,7 +103,7 @@ function Settings() {
 
             {/* Frame rate */}
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">帧率</label>
+              <label className="text-xs font-medium text-muted-foreground">Frame Rate</label>
               <Select
                 value={String(config.frame_rate)}
                 onValueChange={(v) => updateConfig("frame_rate", Number(v))}
@@ -121,7 +121,7 @@ function Settings() {
 
             {/* Bitrate */}
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">比特率</label>
+              <label className="text-xs font-medium text-muted-foreground">Bitrate</label>
               <div className="flex items-center gap-2">
                 <Input
                   type="number"
@@ -137,10 +137,10 @@ function Settings() {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <label className="text-xs font-medium text-muted-foreground">
-                  硬件加速
+                  Hardware Acceleration
                 </label>
                 <p className="text-xs text-muted-foreground/60">
-                  VideoToolbox 硬件编码 (重启服务生效)
+                  VideoToolbox hardware encoding (restart required)
                 </p>
               </div>
               <Switch
@@ -154,8 +154,8 @@ function Settings() {
             {/* Chroma mode */}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">
-                色度模式
-                <span className="ml-1 text-xs text-muted-foreground/60">(重启服务生效)</span>
+                Chroma Mode
+                <span className="ml-1 text-xs text-muted-foreground/60">(restart required)</span>
               </label>
               <Select
                 value={config.chroma_mode}
@@ -173,17 +173,17 @@ function Settings() {
           </CardContent>
         </Card>
 
-        {/* 网络 */}
+        {/* Network */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">网络</CardTitle>
+            <CardTitle className="text-sm font-medium">Network</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Bind address */}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">
-                绑定地址
-                <span className="ml-1 text-xs text-muted-foreground/60">(重启服务生效)</span>
+                Bind Address
+                <span className="ml-1 text-xs text-muted-foreground/60">(restart required)</span>
               </label>
               <Input
                 type="text"
@@ -202,8 +202,8 @@ function Settings() {
             {/* Max connections */}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">
-                最大连接数
-                <span className="ml-1 text-xs text-muted-foreground/60">(重启服务生效)</span>
+                Max Connections
+                <span className="ml-1 text-xs text-muted-foreground/60">(restart required)</span>
               </label>
               <Input
                 type="number"
@@ -216,8 +216,8 @@ function Settings() {
             {/* Idle timeout */}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">
-                空闲超时
-                <span className="ml-1 text-xs text-muted-foreground/60">(重启服务生效)</span>
+                Idle Timeout
+                <span className="ml-1 text-xs text-muted-foreground/60">(restart required)</span>
               </label>
               <div className="flex items-center gap-2">
                 <Input
@@ -228,23 +228,23 @@ function Settings() {
                   }
                   className="h-8 text-sm"
                 />
-                <span className="shrink-0 text-xs text-muted-foreground">秒</span>
+                <span className="shrink-0 text-xs text-muted-foreground">seconds</span>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* 认证 */}
+        {/* Authentication */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">认证</CardTitle>
+            <CardTitle className="text-sm font-medium">Authentication</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Username */}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">
-                用户名
-                <span className="ml-1 text-xs text-muted-foreground/60">(重启服务生效)</span>
+                Username
+                <span className="ml-1 text-xs text-muted-foreground/60">(restart required)</span>
               </label>
               <Input
                 type="text"
@@ -262,8 +262,8 @@ function Settings() {
             {/* Password */}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">
-                密码
-                <span className="ml-1 text-xs text-muted-foreground/60">(重启服务生效)</span>
+                Password
+                <span className="ml-1 text-xs text-muted-foreground/60">(restart required)</span>
               </label>
               <Input
                 type="password"
@@ -280,17 +280,17 @@ function Settings() {
           </CardContent>
         </Card>
 
-        {/* 显示 */}
+        {/* Display */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">显示</CardTitle>
+            <CardTitle className="text-sm font-medium">Display</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* HiDPI scale */}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">
-                HiDPI 缩放
-                <span className="ml-1 text-xs text-muted-foreground/60">(重启服务生效)</span>
+                HiDPI Scale
+                <span className="ml-1 text-xs text-muted-foreground/60">(restart required)</span>
               </label>
               <Select
                 value={String(config.hidpi_scale)}
@@ -312,9 +312,9 @@ function Settings() {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <label className="text-xs font-medium text-muted-foreground">
-                  显示光标
+                  Show Cursor
                 </label>
-                <p className="text-xs text-muted-foreground/60">重启服务生效</p>
+                <p className="text-xs text-muted-foreground/60">restart required</p>
               </div>
               <Switch
                 checked={config.show_cursor}
@@ -324,16 +324,16 @@ function Settings() {
           </CardContent>
         </Card>
 
-        {/* 通用 */}
+        {/* General */}
         <Card className="md:col-span-2">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">通用</CardTitle>
+            <CardTitle className="text-sm font-medium">General</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {/* Log level */}
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">日志级别</label>
+                <label className="text-xs font-medium text-muted-foreground">Log Level</label>
                 <Select
                   value={config.log_level}
                   onValueChange={(v) => updateConfig("log_level", v)}
@@ -354,8 +354,8 @@ function Settings() {
               {/* Autostart */}
               <div className="flex items-center justify-between rounded-md border px-3 py-2">
                 <div className="space-y-0.5">
-                  <label className="text-xs font-medium">开机自启</label>
-                  <p className="text-xs text-muted-foreground">登录时自动启动服务</p>
+                  <label className="text-xs font-medium">Autostart</label>
+                  <p className="text-xs text-muted-foreground">Start service automatically on login</p>
                 </div>
                 <Switch
                   checked={config.autostart}

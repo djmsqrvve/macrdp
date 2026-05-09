@@ -39,10 +39,10 @@ function About() {
           </div>
           <h1 className="text-xl font-semibold text-foreground">macrdp</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            macOS 远程桌面服务端
+            macOS Remote Desktop Server
           </p>
           <p className="mt-2 font-mono text-xs text-muted-foreground">
-            版本 1.0.0
+            Version 1.0.0
           </p>
         </CardContent>
       </Card>
@@ -50,7 +50,7 @@ function About() {
       {/* Check for updates */}
       <section>
         <h2 className="mb-3 text-base font-medium text-foreground">
-          软件更新
+          Software Updates
         </h2>
         <Card size="sm">
           <CardContent>
@@ -58,19 +58,19 @@ function About() {
               <div>
                 {updateStatus === "idle" && (
                   <p className="text-sm text-muted-foreground">
-                    点击检查是否有新版本
+                    Click to check for updates
                   </p>
                 )}
                 {updateStatus === "checking" && (
-                  <p className="text-sm text-muted-foreground">正在检查...</p>
+                  <p className="text-sm text-muted-foreground">Checking...</p>
                 )}
                 {updateStatus === "latest" && (
-                  <p className="text-sm text-macos-green">已是最新版本</p>
+                  <p className="text-sm text-macos-green">Up to date</p>
                 )}
                 {updateStatus === "available" && (
                   <div>
                     <p className="text-sm text-foreground">
-                      发现新版本: {updateInfo.version}
+                      New version available: {updateInfo.version}
                     </p>
                     {updateInfo.url && (
                       <a
@@ -80,13 +80,13 @@ function About() {
                         className="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
                       >
                         <ExternalLink className="h-3 w-3" />
-                        前往下载
+                        Download
                       </a>
                     )}
                   </div>
                 )}
                 {updateStatus === "error" && (
-                  <p className="text-sm text-destructive">检查更新失败</p>
+                  <p className="text-sm text-destructive">Update check failed</p>
                 )}
               </div>
               <Button
@@ -94,7 +94,7 @@ function About() {
                 onClick={handleCheckUpdate}
               >
                 <RefreshCw className={`h-4 w-4 ${updateStatus === "checking" ? "animate-spin" : ""}`} />
-                检查更新
+                Check for Updates
               </Button>
             </div>
           </CardContent>
@@ -104,7 +104,7 @@ function About() {
       {/* Links section */}
       <section>
         <h2 className="mb-3 text-base font-medium text-foreground">
-          相关链接
+          Related Links
         </h2>
         <Card size="sm" className="py-0">
           <div className="divide-y divide-border">
@@ -116,28 +116,28 @@ function About() {
             >
               <span className="flex items-center gap-2 text-sm text-foreground">
                 <Github className="h-4 w-4 text-muted-foreground" />
-                GitHub 项目
+                GitHub Project
               </span>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </a>
             <div className="flex items-center justify-between px-4 py-3">
               <span className="flex items-center gap-2 text-sm text-foreground">
                 <Scale className="h-4 w-4 text-muted-foreground" />
-                许可证
+                License
               </span>
               <span className="text-sm text-muted-foreground">MIT</span>
             </div>
             <div className="flex items-center justify-between px-4 py-3">
               <span className="flex items-center gap-2 text-sm text-foreground">
                 <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                协议栈
+                Protocol Stack
               </span>
               <span className="text-sm text-muted-foreground">IronRDP</span>
             </div>
             <div className="flex items-center justify-between px-4 py-3">
               <span className="flex items-center gap-2 text-sm text-foreground">
                 <Cpu className="h-4 w-4 text-muted-foreground" />
-                编码器
+                Encoder
               </span>
               <span className="text-sm text-muted-foreground">
                 OpenH264 (H.264)

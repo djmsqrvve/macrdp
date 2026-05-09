@@ -7,130 +7,129 @@
 
 **Fork of [x6nux/macrdp](https://github.com/x6nux/macrdp) by [djmsqrvve](https://github.com/djmsqrvve)**
 
-**[English](README_EN.md)** | 中文
+English | **[中文](docs/zh/README.md)**
 
-**macOS 远程桌面服务端**
+**macOS Remote Desktop Server**
 
-原生 macOS RDP 服务端。从 Windows、Linux、iOS 或 Android 远程连接你的 Mac — 支持任何标准 RDP 客户端，如 Windows 远程桌面 (mstsc)、Microsoft Remote Desktop、FreeRDP。
+A native RDP server for macOS. Remote into your Mac from Windows, Linux, iOS, or Android — using any standard RDP client like Windows Remote Desktop (mstsc), Microsoft Remote Desktop, or FreeRDP.
 
-> **为什么选 macrdp？** macOS 没有内置 RDP 服务端，自带的 VNC 又慢又模糊。macrdp 让你的 Mac 拥有一流的远程桌面体验 — 快速、清晰、开箱即用兼容所有 RDP 客户端。
+> **Why macrdp?** macOS has no built-in RDP server. VNC is slow and blurry. macrdp gives your Mac a first-class remote desktop experience — fast, sharp, and compatible with every RDP client out of the box.
 
 ## This Fork
 
 This is DJ's personal fork with enhancements:
 
 - **English UI localization** - Full English interface for international users
-- **Language switching** - Toggle between English and Chinese in the UI
 - **Enhanced features** - Additional functionality for personal use
 - **Active development** - Regular updates and improvements
 
 ---
 
-## 功能特性
+## Features
 
-- **标准 RDP 协议** — 兼容任何 RDP 客户端，客户端无需安装特殊软件
-- **硬件加速编码** — 通过 Apple VideoToolbox GPU 加速 H.264，Apple Silicon 上低延迟
-- **高保真色彩** — AVC444 模式像素级色彩还原（RDP 10）
-- **完整键鼠支持** — 104 键映射、数字键盘、修饰键、滚轮，完整输入注入
-- **HiDPI / Retina 支持** — 2x/3x 倍率采集，远程 4K 高清显示
-- **灵活配置** — 分辨率、帧率、码率、编码器、质量预设，简单 TOML 配置
-- **安全连接** — NLA/CredSSP 认证 + 自动生成 TLS 证书
-- **锁屏采集** — 锁屏时自动切换 CoreGraphics 回退
+- **Standard RDP protocol** — works with any RDP client, no special software needed on the client side
+- **Hardware-accelerated encoding** — GPU-powered H.264 via Apple VideoToolbox, low latency on Apple Silicon
+- **High fidelity color** — AVC444 mode for pixel-perfect color reproduction (RDP 10)
+- **Full keyboard & mouse** — complete input injection with 104-key mapping, numpad, modifiers, scroll
+- **HiDPI / Retina support** — capture at 2x/3x resolution for sharp 4K remote display
+- **Configurable** — resolution, frame rate, bitrate, encoder, quality presets, all via simple TOML config
+- **Secure** — NLA/CredSSP authentication with auto-generated TLS certificates
+- **Lock screen capture** — automatic CoreGraphics fallback when the screen is locked
 
 ---
 
-## 环境要求
+## Requirements
 
-- **macOS 14+**（Sonoma 或更高版本）
+- **macOS 14+** (Sonoma or later)
 - **Rust 1.75+**
-- 屏幕录制权限（系统设置 > 隐私与安全性）
-- 辅助功能权限（用于键盘鼠标注入）
+- Screen Recording permission (System Settings > Privacy & Security)
+- Accessibility permission (for keyboard/mouse injection)
 
 ---
 
-## 快速开始
+## Quick Start
 
 ```bash
-# 编译
+# Build
 cargo build --release
 
-# 运行
+# Run
 cargo run --release --bin macrdp-server
 
-# 从任意 RDP 客户端连接 → Mac-IP:3389
+# Connect from any RDP client → your-mac-ip:3389
 ```
 
 ---
 
-## 配置
+## Configuration
 
-复制 `config.example.toml` 为 `config.toml` 并按需修改：
+Copy `config.example.toml` to `config.toml` and edit as needed:
 
 ```toml
-# 网络
+# Network
 port = 13389
 
-# 认证
+# Authentication
 username = "admin"
 password = "123456"
 
-# 显示
-width = 0          # 0 = 自动检测
+# Display
+width = 0          # 0 = auto-detect
 height = 0
 frame_rate = 60
-hidpi_scale = 2    # Retina 上 2 倍缩放获得 4K
+hidpi_scale = 2    # 2x for 4K on Retina
 
-# 编码
+# Encoding
 quality = "high_quality"    # low_latency / balanced / high_quality
 encoder = "hardware"        # hardware (GPU) / software (CPU)
-chroma_mode = "avc420"      # avc420 (兼容) / avc444 (最佳画质)
-bitrate_mbps = 50           # 目标码率 (Mbps)
+chroma_mode = "avc420"      # avc420 (compatible) / avc444 (best quality)
+bitrate_mbps = 50           # target bitrate (Mbps)
 
-# 日志
+# Logging
 log_level = "info"          # trace / debug / info / warn / error
 ```
 
-配置搜索顺序:
+Config search order:
 1. `./config.toml`
 2. `~/.config/macrdp/config.toml`
 3. `~/Library/Application Support/macrdp/config.toml`
 
 ---
 
-## 项目结构
+## Project Structure
 
 ```
 crates/
-├── macrdp-server/       主服务端程序
-├── macrdp-capture/      屏幕采集
-├── macrdp-input/        键鼠注入
-├── macrdp-encode/       视频编码
-├── ironrdp-server-gfx/  RDP 协议层 (IronRDP fork)
+├── macrdp-server/       Main server binary
+├── macrdp-capture/      Screen capture
+├── macrdp-input/        Keyboard & mouse injection
+├── macrdp-encode/       Video encoding
+├── ironrdp-server-gfx/  RDP protocol (IronRDP fork)
 └── ironrdp-acceptor-patched/
-                         RDP 连接接受器
+                         RDP connection acceptor
 ```
 
 ---
 
-## 致谢
+## Acknowledgments
 
-本项目的诞生离不开以下优秀的开源项目，在此致以诚挚的敬意：
+This project stands on the shoulders of giants. Special thanks to:
 
-- **[IronRDP](https://github.com/Devolutions/IronRDP)** — 纯 Rust RDP 协议实现。macrdp 的协议栈基于 ironrdp-server 的 fork，添加了 GFX/AVC444 扩展。
-- **[FreeRDP](https://github.com/FreeRDP/FreeRDP)** — 开源 RDP 参考实现。其 AVC444 双流编码方案和 YUV444 B 区域拆分算法是 macrdp 实现的重要参考。
-- **[RustDesk](https://github.com/rustdesk/rustdesk)** — 使用 Rust 编写的开源远程桌面软件。其跨平台屏幕采集和输入注入的架构思路给予了很大启发。
+- **[IronRDP](https://github.com/Devolutions/IronRDP)** — Pure Rust RDP protocol implementation. macrdp's protocol stack is built on a fork of ironrdp-server with GFX/AVC444 extensions.
+- **[FreeRDP](https://github.com/FreeRDP/FreeRDP)** — The reference open-source RDP implementation. Its AVC444 dual-stream encoding approach and YUV444 B-area split algorithm were essential references.
+- **[RustDesk](https://github.com/rustdesk/rustdesk)** — Open-source remote desktop software written in Rust. Its architecture for cross-platform screen capture and input injection was a great source of inspiration.
 
 ---
 
-## 许可证
+## License
 
-本项目采用 **GNU 通用公共许可证 v3.0** 授权 — 详见 [LICENSE](LICENSE)。任何基于本项目的衍生作品必须同样以 GPLv3 开源。
+This project is licensed under the **GNU General Public License v3.0** — see [LICENSE](LICENSE) for details. Any derivative work must also be distributed under GPLv3.
 
 ---
 
 <details>
-<summary><b>关键词</b></summary>
+<summary><b>Keywords</b></summary>
 
-macOS RDP 服务端, Mac 远程桌面, Mac 远程桌面服务端, 远程桌面协议 macOS, 从 Windows 连接 Mac, 从 Linux 连接 Mac, 从安卓连接 Mac, 远程控制 Mac, Mac 远程访问, Mac 屏幕共享, Apple Silicon 远程桌面, VNC 替代方案, macOS 远程桌面方案, macOS RDP server, Mac remote desktop server, RDP server for Mac, connect to Mac from Windows, remote control Mac, VNC alternative Mac
+macOS RDP server, Mac remote desktop server, RDP server for Mac, remote desktop protocol macOS, connect to Mac from Windows, connect to Mac from Linux, connect to Mac from Android, Windows Remote Desktop to Mac, mstsc Mac, Mac remote access, Mac screen sharing, remote control Mac, Apple Silicon remote desktop, Rust RDP server, VNC alternative Mac, FreeRDP Mac server, macOS remote desktop, Mac remote desktop solution, RDP for macOS
 
 </details>

@@ -61,7 +61,7 @@ function Logs() {
   const formatTimestamp = (ts: string) => {
     try {
       const d = new Date(ts);
-      return d.toLocaleTimeString("zh-CN", {
+      return d.toLocaleTimeString("en-US", {
         hour12: false,
         hour: "2-digit",
         minute: "2-digit",
@@ -99,7 +99,7 @@ function Logs() {
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="搜索日志..."
+            placeholder="Search logs..."
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             className="pl-8"
@@ -113,7 +113,7 @@ function Logs() {
           onClick={() => setAutoScroll(!autoScroll)}
         >
           <ArrowDownToLine className="h-3.5 w-3.5" />
-          {autoScroll ? "自动滚动: 开" : "自动滚动: 关"}
+          {autoScroll ? "Auto-scroll: On" : "Auto-scroll: Off"}
         </Button>
 
         {/* Clear button */}
@@ -123,14 +123,14 @@ function Logs() {
           onClick={clearLogs}
         >
           <Trash2 className="h-3.5 w-3.5" />
-          清空
+          Clear
         </Button>
       </div>
 
       {/* Log count */}
       <div className="text-xs text-muted-foreground">
-        {filteredLogs.length} 条日志
-        {filteredLogs.length !== logs.length && ` (共 ${logs.length} 条)`}
+        {filteredLogs.length} log entries
+        {filteredLogs.length !== logs.length && ` (total ${logs.length})`}
       </div>
 
       {/* Log list */}
@@ -141,7 +141,7 @@ function Logs() {
       >
         {filteredLogs.length === 0 ? (
           <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-            暂无日志
+            No logs available
           </div>
         ) : (
           <div className="p-3 font-mono text-xs leading-relaxed">

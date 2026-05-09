@@ -17,15 +17,15 @@ export default function PermissionBanner() {
   if (!perms || (perms.screen_capture && perms.accessibility)) return null;
 
   const missing: string[] = [];
-  if (!perms.screen_capture) missing.push("屏幕录制");
-  if (!perms.accessibility) missing.push("辅助功能");
+  if (!perms.screen_capture) missing.push("Screen Recording");
+  if (!perms.accessibility) missing.push("Accessibility");
 
   return (
     <Alert variant="destructive" className="rounded-none border-x-0 border-t-0">
       <AlertTriangle className="h-4 w-4" />
       <AlertDescription className="flex items-center justify-between">
         <span>
-          缺少「{missing.join("」「")}」权限 — 部分功能将无法使用
+          Missing "{missing.join('" "')}" permissions — some features will not work
         </span>
         <button
           onClick={() =>
@@ -35,7 +35,7 @@ export default function PermissionBanner() {
           }
           className="ml-4 shrink-0 text-sm font-medium underline-offset-4 hover:underline"
         >
-          前往授权
+          Authorize
         </button>
       </AlertDescription>
     </Alert>

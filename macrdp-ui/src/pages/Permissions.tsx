@@ -10,22 +10,22 @@ import PermissionCard from "../components/PermissionCard";
 const permissionDefs = [
   {
     key: "screen_capture" as keyof PermissionStatus,
-    name: "屏幕录制",
-    description: "用于捕获屏幕内容",
+    name: "Screen Recording",
+    description: "Required to capture screen content",
     pane: "screen_capture",
     iconKey: "screen_capture" as const,
   },
   {
     key: "accessibility" as keyof PermissionStatus,
-    name: "辅助功能",
-    description: "用于注入键盘和鼠标事件",
+    name: "Accessibility",
+    description: "Required to inject keyboard and mouse events",
     pane: "accessibility",
     iconKey: "accessibility" as const,
   },
   {
     key: "microphone" as keyof PermissionStatus,
-    name: "麦克风",
-    description: "用于音频转发（Phase 3）",
+    name: "Microphone",
+    description: "Required for audio forwarding (Phase 3)",
     pane: "microphone",
     iconKey: "microphone" as const,
   },
@@ -58,13 +58,13 @@ function Permissions() {
         <Alert>
           <Info className="h-4 w-4" />
           <span className="text-sm font-medium">
-            首次使用需要授权以下权限
+            First-time use requires granting the following permissions
           </span>
         </Alert>
       )}
 
       <h1 className="text-lg font-semibold text-foreground">
-        系统权限
+        System Permissions
       </h1>
 
       <div className="space-y-3">
@@ -86,13 +86,13 @@ function Permissions() {
             disabled={!allRequiredGranted}
             onClick={() => navigate("/")}
           >
-            继续
+            Continue
           </Button>
           <Button
             variant="outline"
             onClick={() => navigate("/")}
           >
-            跳过
+            Skip
           </Button>
         </div>
       )}
