@@ -57,21 +57,21 @@ function formatBytes(bytes: number): [string, string] {
 }
 
 const qualityLabel = (q: number) =>
-  q >= 0.8 ? "优秀" : q >= 0.6 ? "良好" : q >= 0.4 ? "一般" : q >= 0.2 ? "较差" : "极差";
+  q >= 0.8 ? "Excellent" : q >= 0.6 ? "Good" : q >= 0.4 ? "Fair" : q >= 0.2 ? "Poor" : "Very Poor";
 
 export default function MetricsStrip({ metrics, port }: MetricsStripProps) {
   const [bytesVal, bytesUnit] = formatBytes(metrics.bytes_sent);
   return (
     <Card className="flex items-stretch overflow-x-auto">
-      <MetricItem label="端口" value={String(port)} sub="0.0.0.0" />
-      <MetricItem label="帧率" value={String(metrics.fps)} unit="FPS" />
-      <MetricItem label="比特率" value={(metrics.bitrate_kbps / 1000).toFixed(1)} unit="Mbps" />
+      <MetricItem label="Port" value={String(port)} sub="0.0.0.0" />
+      <MetricItem label="Frame Rate" value={String(metrics.fps)} unit="FPS" />
+      <MetricItem label="Bitrate" value={(metrics.bitrate_kbps / 1000).toFixed(1)} unit="Mbps" />
       <MetricItem label="RTT" value={metrics.latency_ms.toFixed(1)} unit="ms" sub="EWMA" />
-      <MetricItem label="编码" value={metrics.encode_ms.toFixed(1)} unit="ms" />
-      <MetricItem label="网络" value={metrics.net_ms.toFixed(1)} unit="ms" />
-      <MetricItem label="帧大小" value={String(Math.round(metrics.last_frame_bytes / 1024))} unit="KB" />
-      <MetricItem label="总流量" value={bytesVal} unit={bytesUnit} />
-      <MetricItem label="网络质量" value={qualityLabel(metrics.network_quality)}>
+      <MetricItem label="Encode" value={metrics.encode_ms.toFixed(1)} unit="ms" />
+      <MetricItem label="Network" value={metrics.net_ms.toFixed(1)} unit="ms" />
+      <MetricItem label="Frame Size" value={String(Math.round(metrics.last_frame_bytes / 1024))} unit="KB" />
+      <MetricItem label="Total Traffic" value={bytesVal} unit={bytesUnit} />
+      <MetricItem label="Network Quality" value={qualityLabel(metrics.network_quality)}>
         <QualityBar quality={metrics.network_quality} />
       </MetricItem>
     </Card>

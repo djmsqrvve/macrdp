@@ -14,7 +14,7 @@ use tauri_plugin_autostart::MacosLauncher;
 use database::Database;
 
 pub fn run() {
-    // 初始化日志输出到 stderr（开发模式下可见）
+    // Initialize logging to stderr (visible in dev mode)
     tracing_subscriber::fmt()
         .with_env_filter("macrdp_ui=debug,macrdp_core=debug,info")
         .init();

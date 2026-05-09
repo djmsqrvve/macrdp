@@ -6,23 +6,23 @@
 help:
 	@echo "macrdp Makefile"
 	@echo ""
-	@echo "  开发:"
-	@echo "    make install          安装前端依赖"
-	@echo "    make build-cli        编译 CLI"
-	@echo "    make dev-ui           启动 UI 开发模式 (Tauri)"
-	@echo "    make dev-front        仅启动前端 dev server"
-	@echo "    make run-cli          运行 CLI (端口 3389)"
-	@echo "    make run-cli-ipc      运行 CLI + IPC socket"
-	@echo "    make check            检查所有编译"
+	@echo "  Development:"
+	@echo "    make install          Install frontend dependencies"
+	@echo "    make build-cli        Build CLI"
+	@echo "    make dev-ui           Start UI dev mode (Tauri)"
+	@echo "    make dev-front        Start frontend dev server only"
+	@echo "    make run-cli          Run CLI (port 3389)"
+	@echo "    make run-cli-ipc      Run CLI + IPC socket"
+	@echo "    make check            Check all builds"
 	@echo ""
-	@echo "  发布:"
-	@echo "    make release          完整发布构建 (CLI+UI, 优化, dmg)"
-	@echo "    make release-fast     快速发布构建 (无优化, dmg)"
+	@echo "  Release:"
+	@echo "    make release          Full release build (CLI+UI, optimized, dmg)"
+	@echo "    make release-fast     Fast release build (no optimization, dmg)"
 	@echo ""
-	@echo "  清理:"
-	@echo "    make clean            清理所有构建产物"
-	@echo "    make clean-cli        仅清理 CLI"
-	@echo "    make clean-ui         仅清理 UI"
+	@echo "  Cleanup:"
+	@echo "    make clean            Clean all build artifacts"
+	@echo "    make clean-cli        Clean CLI only"
+	@echo "    make clean-ui         Clean UI only"
 
 # === CLI ===
 
@@ -63,37 +63,37 @@ dev-front:
 clean-ui:
 	rm -rf macrdp-ui/dist macrdp-ui/src-tauri/target
 
-# === 发布 ===
+# === Release ===
 
-# 完整发布：全优化编译 + 打包 dmg
+# Full release: fully optimized build + package dmg
 release:
-	@echo "=== 完整发布构建 (CLI release + UI release) ==="
+	@echo "=== Full release build (CLI release + UI release) ==="
 	MACRDP_CLI_PROFILE=release cd macrdp-ui && npm run tauri build
 	@echo ""
-	@echo "=== 构建完成 ==="
+	@echo "=== Build complete ==="
 	@ls -lh macrdp-ui/src-tauri/target/release/bundle/dmg/*.dmg
 	@ls -lh macrdp-ui/src-tauri/target/release/bundle/macos/*.app
 
-# 快速发布：关闭优化，加快编译，仍打包 dmg
+# Fast release: disable optimization for faster build, still package dmg
 release-fast:
-	@echo "=== 快速发布构建 (CLI debug + UI 无优化) ==="
+	@echo "=== Fast release build (CLI debug + UI no optimization) ==="
 	MACRDP_CLI_PROFILE=debug cd macrdp-ui && npm run tauri build
 	@echo ""
-	@echo "=== 构建完成 ==="
+	@echo "=== Build complete ==="
 	@ls -lh macrdp-ui/src-tauri/target/release/bundle/dmg/*.dmg
 	@ls -lh macrdp-ui/src-tauri/target/release/bundle/macos/*.app
 
-# === 全局 ===
+# === Global ===
 
 build: build-cli build-ui-front build-ui-rust
 
 clean: clean-cli clean-ui
 
 check:
-	@echo "检查 CLI..."
+	@echo "Checking CLI..."
 	@cargo build -p macrdp-server 2>&1 | tail -1
-	@echo "检查 UI Rust..."
+	@echo "Checking UI Rust..."
 	@cargo build --manifest-path macrdp-ui/src-tauri/Cargo.toml 2>&1 | tail -1
-	@echo "检查 UI 前端..."
+	@echo "Checking UI frontend..."
 	@cd macrdp-ui && npm run build 2>&1 | tail -1
-	@echo "全部通过."
+	@echo "All checks passed."
