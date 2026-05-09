@@ -5,6 +5,8 @@
 [![macOS](https://img.shields.io/badge/macOS-14%2B-black.svg)](https://www.apple.com/macos/)
 [![Apple Silicon](https://img.shields.io/badge/Apple%20Silicon-Supported-green.svg)](#)
 
+**Fork of [x6nux/macrdp](https://github.com/x6nux/macrdp) by [djmsqrvve](https://github.com/djmsqrvve)**
+
 English | **[中文](README.md)**
 
 **macOS Remote Desktop Server**
@@ -12,6 +14,15 @@ English | **[中文](README.md)**
 A native RDP server for macOS. Remote into your Mac from Windows, Linux, iOS, or Android — using any standard RDP client like Windows Remote Desktop (mstsc), Microsoft Remote Desktop, or FreeRDP.
 
 > **Why macrdp?** macOS has no built-in RDP server. VNC is slow and blurry. macrdp gives your Mac a first-class remote desktop experience — fast, sharp, and compatible with every RDP client out of the box.
+
+## This Fork
+
+This is DJ's personal fork with enhancements:
+
+- **English UI localization** - Full English interface for international users
+- **Language switching** - Toggle between English and Chinese in the UI
+- **Enhanced features** - Additional functionality for personal use
+- **Active development** - Regular updates and improvements
 
 ---
 

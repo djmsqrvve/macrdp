@@ -5,6 +5,8 @@
 [![macOS](https://img.shields.io/badge/macOS-14%2B-black.svg)](https://www.apple.com/macos/)
 [![Apple Silicon](https://img.shields.io/badge/Apple%20Silicon-Supported-green.svg)](#)
 
+**Fork of [x6nux/macrdp](https://github.com/x6nux/macrdp) by [djmsqrvve](https://github.com/djmsqrvve)**
+
 **[English](README_EN.md)** | 中文
 
 **macOS 远程桌面服务端**
@@ -12,6 +14,15 @@
 原生 macOS RDP 服务端。从 Windows、Linux、iOS 或 Android 远程连接你的 Mac — 支持任何标准 RDP 客户端，如 Windows 远程桌面 (mstsc)、Microsoft Remote Desktop、FreeRDP。
 
 > **为什么选 macrdp？** macOS 没有内置 RDP 服务端，自带的 VNC 又慢又模糊。macrdp 让你的 Mac 拥有一流的远程桌面体验 — 快速、清晰、开箱即用兼容所有 RDP 客户端。
+
+## This Fork
+
+This is DJ's personal fork with enhancements:
+
+- **English UI localization** - Full English interface for international users
+- **Language switching** - Toggle between English and Chinese in the UI
+- **Enhanced features** - Additional functionality for personal use
+- **Active development** - Regular updates and improvements
 
 ---
 
